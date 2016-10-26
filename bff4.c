@@ -14,9 +14,15 @@
 
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 typedef struct _op
 {
@@ -119,11 +125,32 @@ int consume(op *o)
 	return a;
 }
 
-int main()
+extern int errno;
+
+int main(int argc, char **argv)
 {
 	op * o=0, *z, *zend;
 	int sz=0, i, *m, mp, msz;
-	int a = getbf();
+	int a;
+
+	int fd;
+	if(argc > 1)
+	{
+		char* filename = argv[1];
+		int errnum;
+#if DEBUG
+		printf("Using file: %s\n", filename);
+#endif
+		fd = dup(fileno(stdin));
+		freopen(filename, "r", stdin);
+		if((errnum = errno)!=0)
+		{
+			fprintf(stderr, "Error opening %s: %s\n", filename, strerror(errnum));
+		}
+	}
+
+	a = getbf();
+
 	for(;;sz++)
 	{
 		o = zalloc(o,(sz+1)*sizeof(op),sz*sizeof(op));
@@ -140,6 +167,19 @@ int main()
 			o[sz].igo = i;
 		}
 		a = consume(o+sz);
+	}
+
+	if(argc>1)
+	{
+		int errnum;
+		dup2(fd, fileno(stdin));
+		close(fd);
+		clearerr(stdin);
+		if((errnum = errno)!=0)
+		{
+			fprintf(stderr, "Error re-joining stdin: %s\n", strerror(errnum));
+			exit(2);
+		}
 	}
 
 	for( i=0;i<sz;i++ )
@@ -169,7 +209,7 @@ int main()
 	zend = o+sz;
 	for( ; z!=zend; ++z )
 	{
-#ifdef DBG
+#ifdef DEBUG
 		printop(z);
 #endif
 
@@ -220,7 +260,7 @@ int main()
 		}
 		mp += z->shift;
 
-#ifdef DBG
+#ifdef DEBUG
 		for( i=0; i<msz; i++ )
 		{
 		  if( i==mp ) printf("'");
