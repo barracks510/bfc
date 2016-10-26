@@ -1,26 +1,41 @@
-CFLAGS += -std=c99 -pedantic -Wall -O2
-LDLIBS += -lc
-PREFIX ?= /usr/local
+CFLAGS  += -std=c99 -pedantic -Wall -O2
+LIBS    := -lc
 
-.PHONY: default all clean install uninstall
+SRC  := bfc.c consume.c getbf.c printop.c zalloc.c
+BIN  := bfc
 
-default: all
+ODIR := obj
+OBJ  := $(patsubst %.c,$(ODIR)/%.o,$(SRC))
 
-all: bfc
+IDIR := include
 
-bfc: bff4.o
-	@cc $(LDFLAGS) $(LDLIBS) -o $@ $<
-	@echo linking...
+CFLAGS  += -I$(ODIR)/include -I$(IDIR)
+LDFLAGS += -L$(ODIR)/lib
 
-bff4.o: bff4.c
-	@cc $(CFLAGS) -c -o $@ $<
-	@echo compiling
+all: $(BIN)
 
 clean:
-	@rm bfc bff4.o
+	$(RM) -rf $(BIN) obj/*
 
-install: bfc
-	@install bfc $(PREFIX)/bin/bfc
+$(BIN): $(OBJ)
+	@echo LINK $(BIN)
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-uninstall:
-	@rm $(PREFIX)/bin/bfc
+$(OBJ): $(ODIR)
+
+$(ODIR):
+	@mkdir -p $@
+
+$(ODIR)/%.o : %.c
+	@echo CC $<
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+# ------------
+
+.PHONY: all clean
+
+.SUFFIXES:
+.SUFFIXES: .c .o
+
+vpath %.c   src
+vpath %.h   include
