@@ -16,4 +16,3 @@ void printop(struct op *z)
 		printf("%d ", z->d[j]);
 	printf("}\n");
 }
-

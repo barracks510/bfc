@@ -13,4 +13,3 @@ next:
 	if (!strchr(",.[]+-<>!", a)) goto next;
 	return a;
 }
-

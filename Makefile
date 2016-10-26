@@ -1,7 +1,7 @@
-CFLAGS  += -std=c99 -pedantic -Wall -O2
+CFLAGS  += -ansi -pedantic -Wall -O2
 LIBS    := -lc
 
-SRC  := bfc.c consume.c getbf.c printop.c zalloc.c
+SRC  := bfc.c consume.c consume3.c getbf.c getbf2.c printop.c zalloc.c parse.c run.c
 BIN  := bfc
 
 ODIR := obj
@@ -15,11 +15,11 @@ LDFLAGS += -L$(ODIR)/lib
 all: $(BIN)
 
 clean:
-	$(RM) -rf $(BIN) obj/*
+	@rm -rf $(BIN) obj/*
 
 $(BIN): $(OBJ)
 	@echo LINK $(BIN)
-	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	@cc $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(OBJ): $(ODIR)
 
@@ -28,7 +28,7 @@ $(ODIR):
 
 $(ODIR)/%.o : %.c
 	@echo CC $<
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	@cc $(CFLAGS) -c -o $@ $<
 
 # ------------
 

@@ -3,12 +3,12 @@
 #include "bff4.h"
 
 #define zalloci(p, sz, osz) zalloc(p, (sz) * sizeof(int), (osz) * sizeof(int));
-int consume(struct op *o)
+int bff4_consume3(char const *buffer, int *cursor, struct op *o)
 {
 	int mp = 0, i;
 	int a = o->c;
 
-	if (strchr("[]", a)) a = getbf();
+	if (strchr("[]", a)) a = bff4_getbf2(buffer, cursor);
 
 	o->sz = 1;
 	o->d = zalloci(0, 1, 0);
@@ -17,7 +17,7 @@ int consume(struct op *o)
 	o->dbsz = 0;
 	o->db = 0;
 
-	for (;; a = getbf()) {
+	for (;; a = bff4_getbf2(buffer, cursor)) {
 		if (a == -1 || a == '!') break;
 		if (strchr(",.[]", a)) break;
 

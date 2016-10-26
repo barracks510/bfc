@@ -16,22 +16,55 @@
 
 #define _GNU_SOURCE
 
-#include <stdio.h>
-#include <string.h>
-
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "bff4.h"
 
 extern int errno;
 
-#define zalloci(p, sz, osz) zalloc(p, (sz) * sizeof(int), (osz) * sizeof(int));
+char *readall_stdin()
+{
+#define BUF_SIZE 1024
+	char buffer[BUF_SIZE];
+	size_t content_size = 1;
+	/* Preallocate space.  We could just allocate one char here,
+	 * but that wouldn't be efficient. */
+	char *content = malloc(sizeof(char) * BUF_SIZE);
+	if (content == NULL) {
+		perror("Failed to allocate content");
+		exit(1);
+	}
+	content[0] = '\0';
+	while (fgets(buffer, BUF_SIZE, stdin)) {
+		char *old = content;
+		content_size += strlen(buffer);
+		content = realloc(content, content_size);
+		if (content == NULL) {
+			perror("Failed to reallocate content");
+			free(old);
+			exit(2);
+		}
+		strcat(content, buffer);
+	}
+
+	if (ferror(stdin)) {
+		free(content);
+		perror("Error reading from stdin.");
+		exit(3);
+	}
+
+	return content;
+}
+
 int main(int argc, char **argv)
 {
-	struct op *o = 0, *z, *zend;
-	int sz = 0, i, *m, mp, msz;
-	int a;
+	struct op *o = 0;
+	int n;
+	char *program;
 
 	int fd;
 
@@ -43,32 +76,17 @@ int main(int argc, char **argv)
 #endif
 		fd = dup(fileno(stdin));
 		freopen(filename, "r", stdin);
-		if ((errnum = errno) != 0)
+		if ((errnum = errno) != 0) {
 			fprintf(stderr, "Error opening %s: %s\n", filename, strerror(errnum));
+			return 1;
+		}
 	}
 
-	a = getbf();
-
-	for (;; sz++) {
-		o = zalloc(o, (sz + 1) * sizeof(struct op), sz * sizeof(struct op));
-		if (a == -1 || a == '!') break;
-
-		o[sz].c = a;
-		if (strchr(",.", a)) {
-			a = getbf(); continue;
-		}
-		if (a == ']') {
-			int l = 1, i = sz;
-			while (l && i >= 0) if (i--) l += (o[i].c == ']') - (o[i].c == '[');
-			if (i < 0) {
-				printf("unbalanced ']'\n");
-				return 1;
-			}
-			o[i].igo = sz;
-			o[sz].igo = i;
-		}
-		a = consume(o + sz);
-	}
+	program = readall_stdin();
+	n = bff4_parse(program, &o);
+#if DEBUG
+	printf("parsed size: %d\n", n);
+#endif
 
 	if (argc > 1) {
 		int errnum;
@@ -81,77 +99,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	for (i = 0; i < sz; i++) {
-		o[i].go = &o[o[i].igo];
-#ifndef NOLNR
-		if (o[i].c == '[' && o[i].igo == i + 1 && o[i].shift == 0 && o[i].off <= 0) {
-			o[i].linear = -o[i].d[-o[i].off];
-			if (o[i].linear < 0) {
-				printf("Warning: infinite loop "); printop(&o[i]);
-				printf("linear=%d\n", o[i].linear);
-				o[i].linear = 0;
-			}
-		} else {
-			o[i].linear = 0;
-		}
-#endif
-	}
+	bff4_run(o, n);
 
-	msz = 1000; /* any number */
-	m = zalloci(0, msz, 0);
-	mp = 0;
-
-	z = o;
-	zend = o + sz;
-	for (; z != zend; ++z) {
-#ifdef DEBUG
-		printop(z);
-#endif
-
-		if (z->c == ']') {
-			if (m[mp]) z = z->go;
-		} else if (z->c == '[') {
-			if (!m[mp]) z = z->go;
-		} else if (z->c == ',') {
-			m[mp] = getchar(); continue;
-		} else if (z->c == '.') {
-			putchar(m[mp]); continue;
-		}
-
-		/* apply */
-		if (z->sz) {
-			int nmsz = mp + z->sz + z->off;
-			if (nmsz > msz) {
-				m = zalloci(m, nmsz, msz);
-				msz = nmsz;
-			}
-
-
-#ifndef NOLNR
-			if (z->linear) {
-				int del = m[mp] / z->linear;
-				for (i = 0; i < z->sz; i++) m[mp + z->off + i] += del * z->d[i];
-			} else
-#endif
-			for (i = 0; i < z->sz; i++) m[mp + z->off + i] += z->d[i];
-		}
-
-		if (z->shift > 0) {
-			int nmsz = mp + z->shift + 1;
-			if (nmsz > msz) {
-				m = zalloci(m, nmsz, msz);
-				msz = nmsz;
-			}
-		}
-		mp += z->shift;
-
-#ifdef DEBUG
-		for (i = 0; i < msz; i++) {
-			if (i == mp) printf("'");
-			printf("%d ", m[i]);
-		}
-		printf("\n");
-#endif
-	}
 	return 0;
 }
