@@ -1,4 +1,4 @@
-CFLAGS  += -ansi -pedantic -Wall -O2
+CFLAGS  += -ansi -pedantic -Wall -O2 -g
 LIBS    := -lc
 
 SRC  := bfc.c consume.c consume3.c getbf.c getbf2.c printop.c zalloc.c parse.c run.c

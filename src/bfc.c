@@ -1,16 +1,17 @@
 /*
- * Optimizing brainfuck implementation of dialect based on
- * Daniel's dbfi (see "A very short self-interpreter")
+ * Copyright (c) 2016 Dennis Chen <barracks510@gmail.com>
  *
- * This interpreter has only one input: program and input to the
- * program have to be separated with ! e.g. ",.!a" prints 'a'
- * To use it in interactive mode paste your program as input.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program can be compiled with NOLNR macro defined.
- * NOLNR disables optimization of linear loops (where '<>' balanced), e.g. [->+>++<<].
- * Linear loop is then executed in one step.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Oleg Mazonka 4 Dec 2006  http://mazonka.com/
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
